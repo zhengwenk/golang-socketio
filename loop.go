@@ -3,11 +3,12 @@ package gosocketio
 import (
 	"encoding/json"
 	"errors"
-	"github.com/graarh/golang-socketio/protocol"
-	"github.com/graarh/golang-socketio/transport"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/hegeng1212/golang-socketio/protocol"
+	"github.com/hegeng1212/golang-socketio/transport"
 )
 
 const (
