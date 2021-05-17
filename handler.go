@@ -94,6 +94,10 @@ func (m *methods) processIncomingMessage(c *Channel, msg *protocol.Message) {
 			return
 		}
 
+		if c.postInLoop != nil {
+			c.postInLoop(msg)
+		}
+
 		if !f.ArgsPresent {
 			f.callFunc(c, &struct{}{})
 			return

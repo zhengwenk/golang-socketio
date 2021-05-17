@@ -52,6 +52,37 @@ type Channel struct {
 	server        *Server
 	ip            string
 	requestHeader http.Header
+
+	preInLoop  StatFunc
+	postInLoop StatFuncMsg
+	outLoop    StatTimeFunc
+}
+
+type StatFunc func(msg string)
+
+type StatFuncMsg func(msg *protocol.Message)
+
+type StatTimeFunc func(msg string, time time.Time)
+
+/**
+SetPreInLoop
+*/
+func (c *Channel) SetPreInLoop(f StatFunc) {
+	c.preInLoop = f
+}
+
+/**
+SetPostInLoop
+*/
+func (c *Channel) SetPostInLoop(f StatFuncMsg) {
+	c.postInLoop = f
+}
+
+/**
+SetOutLoop
+*/
+func (c *Channel) SetOutLoop(f StatTimeFunc) {
+	c.outLoop = f
 }
 
 /**
@@ -118,6 +149,11 @@ func inLoop(c *Channel, m *methods) error {
 		if err != nil {
 			return closeChannel(c, m, err)
 		}
+
+		if c.preInLoop != nil {
+			c.preInLoop(pkg)
+		}
+
 		msg, err := protocol.Decode(pkg)
 		if err != nil {
 			closeChannel(c, m, protocol.ErrorWrongPacket)
@@ -173,10 +209,17 @@ func outLoop(c *Channel, m *methods) error {
 			return nil
 		}
 
+		startTime := time.Now()
+
 		err := c.conn.WriteMessage(msg)
 		if err != nil {
 			return closeChannel(c, m, err)
 		}
+
+		if c.outLoop != nil {
+			c.outLoop(msg, startTime)
+		}
+
 	}
 	return nil
 }
