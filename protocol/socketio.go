@@ -44,7 +44,7 @@ func typeToText(msgType int) (string, error) {
 	return "", ErrorWrongMessageType
 }
 
-func Encode(msg *Message) (string, error) {
+func Encode(msg *Message, namespace string) (string, error) {
 	result, err := typeToText(msg.Type)
 	if err != nil {
 		return "", err
@@ -52,7 +52,7 @@ func Encode(msg *Message) (string, error) {
 
 	if msg.Type == MessageTypeEmpty || msg.Type == MessageTypePing ||
 		msg.Type == MessageTypePong {
-		return result, nil
+		return SetNamespace(result, namespace, ""), nil
 	}
 
 	if msg.Type == MessageTypeAckRequest || msg.Type == MessageTypeAckResponse {
@@ -60,11 +60,11 @@ func Encode(msg *Message) (string, error) {
 	}
 
 	if msg.Type == MessageTypeOpen || msg.Type == MessageTypeClose {
-		return result + msg.Args, nil
+		return SetNamespace(result, namespace, msg.Args) + msg.Args, nil
 	}
 
 	if msg.Type == MessageTypeAckResponse {
-		return result + "[" + msg.Args + "]", nil
+		return SetNamespace(result, namespace, msg.Args) + "[" + msg.Args + "]", nil
 	}
 
 	jsonMethod, err := json.Marshal(&msg.Method)
@@ -72,11 +72,22 @@ func Encode(msg *Message) (string, error) {
 		return "", err
 	}
 
-	return result + "[" + string(jsonMethod) + "," + msg.Args + "]", nil
+	return SetNamespace(result, namespace, msg.Args) + "[" + string(jsonMethod) + "," + msg.Args + "]", nil
 }
 
-func MustEncode(msg *Message) string {
-	result, err := Encode(msg)
+func SetNamespace(msg string, namespace string, args string) string {
+	if namespace == "" {
+		return msg
+	}
+	msg += namespace
+	if args != "" {
+		msg += ","
+	}
+	return msg
+}
+
+func MustEncode(msg *Message, namespace string) string {
+	result, err := Encode(msg, namespace)
 	if err != nil {
 		panic(err)
 	}

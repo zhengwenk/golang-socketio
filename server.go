@@ -296,9 +296,10 @@ func (s *Server) SendOpenSequence(c *Channel) {
 			Type: protocol.MessageTypeOpen,
 			Args: string(jsonHdr),
 		},
+		c.namespace,
 	)
 
-	c.out <- protocol.MustEncode(&protocol.Message{Type: protocol.MessageTypeEmpty})
+	c.out <- protocol.MustEncode(&protocol.Message{Type: protocol.MessageTypeEmpty}, c.namespace)
 }
 
 /**
@@ -319,7 +320,7 @@ func (s *Server) SetupEventLoop(conn transport.Connection, remoteAddr string,
 	c.conn = conn
 	c.ip = remoteAddr
 	c.requestHeader = requestHeader
-	c.initChannel()
+	c.initChannel("")
 
 	c.server = s
 	c.header = hdr

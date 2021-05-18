@@ -3,6 +3,7 @@ package gosocketio
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -53,6 +54,7 @@ type Channel struct {
 	ip            string
 	requestHeader http.Header
 
+	namespace  string
 	preInLoop  StatFunc
 	postInLoop StatFuncMsg
 	outLoop    StatTimeFunc
@@ -88,11 +90,12 @@ func (c *Channel) SetOutLoop(f StatTimeFunc) {
 /**
 create channel, map, and set active
 */
-func (c *Channel) initChannel() {
+func (c *Channel) initChannel(namespace string) {
 	//TODO: queueBufferSize from constant to server or client variable
 	c.out = make(chan string, queueBufferSize)
 	c.ack.resultWaiters = make(map[int](chan string))
 	c.alive = true
+	c.namespace = namespace
 }
 
 /**
@@ -210,7 +213,7 @@ func outLoop(c *Channel, m *methods) error {
 		}
 
 		startTime := time.Now()
-
+		log.Println(msg)
 		err := c.conn.WriteMessage(msg)
 		if err != nil {
 			return closeChannel(c, m, err)

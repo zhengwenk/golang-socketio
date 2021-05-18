@@ -1,8 +1,10 @@
 package gosocketio
 
 import (
+	"net/url"
 	"strconv"
 
+	"github.com/hegeng1212/golang-socketio/protocol"
 	"github.com/hegeng1212/golang-socketio/transport"
 )
 
@@ -34,6 +36,34 @@ func GetUrl(host string, port int, secure bool) string {
 }
 
 /**
+Get ws/wss url by host and port
+*/
+func GetSocketUrl(urlString string) (string, string, error) {
+	urlInfo, err := url.Parse(urlString)
+	if err != nil {
+		return "", "", err
+	}
+
+	var port int = 80
+	var secure bool = false
+	if urlInfo.Scheme == "https" {
+		port = 443
+		secure = true
+	}
+
+	socketUrl := GetUrl(urlInfo.Host, port, secure)
+	if urlInfo.RawQuery != "" {
+		socketUrl += "&" + urlInfo.RawQuery
+	}
+	var namesapce string = ""
+	if urlInfo.Path != "" {
+		namesapce = urlInfo.Path
+	}
+
+	return socketUrl, namesapce, nil
+}
+
+/**
 connect to host and initialise socket.io protocol
 
 The correct ws protocol url example:
@@ -41,13 +71,18 @@ ws://myserver.com/socket.io/?EIO=3&transport=websocket
 
 You can use GetUrlByHost for generating correct url
 */
-func Dial(url string, tr transport.Transport) (*Client, error) {
+func Dial(originUrl string, tr transport.Transport) (*Client, error) {
+
+	socketUrl, namesapce, err := GetSocketUrl(originUrl)
+	if err != nil {
+		return nil, err
+	}
+
 	c := &Client{}
-	c.initChannel()
+	c.initChannel(namesapce)
 	c.initMethods()
 
-	var err error
-	c.conn, err = tr.Connect(url)
+	c.conn, err = tr.Connect(socketUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -64,4 +99,11 @@ Close client connection
 */
 func (c *Client) Close() {
 	closeChannel(&c.Channel, &c.methods)
+}
+
+/**
+Send Empty Message for client connection
+*/
+func (c *Client) SendOpenSequence() {
+	c.out <- protocol.MustEncode(&protocol.Message{Type: protocol.MessageTypeEmpty}, c.Channel.namespace)
 }

@@ -34,7 +34,7 @@ func send(msg *protocol.Message, c *Channel, args interface{}) error {
 		msg.Args = string(json)
 	}
 
-	command, err := protocol.Encode(msg)
+	command, err := protocol.Encode(msg, c.namespace)
 	if err != nil {
 		return err
 	}
