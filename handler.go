@@ -87,6 +87,7 @@ On ack_req - look for processing function and send ack_resp
 On emit - look for processing function
 */
 func (m *methods) processIncomingMessage(c *Channel, msg *protocol.Message) {
+	m.resetMsg(c, msg)
 	switch msg.Type {
 	case protocol.MessageTypeEmit:
 		f, ok := m.findMethod(msg.Method)
@@ -143,4 +144,16 @@ func (m *methods) processIncomingMessage(c *Channel, msg *protocol.Message) {
 			waiter <- msg.Args
 		}
 	}
+}
+
+func (m *methods) resetMsg(c *Channel, msg *protocol.Message) {
+	if msg.AckId != "" {
+		_, err := c.ack.getWaiter(msg.AckId)
+		if err == nil {
+			msg.Type = protocol.MessageTypeAckResponse
+			return
+		}
+	}
+	msg.Type = protocol.MessageTypeEmit
+	return
 }

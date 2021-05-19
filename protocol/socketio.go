@@ -3,7 +3,6 @@ package protocol
 import (
 	"encoding/json"
 	"errors"
-	"strconv"
 	"strings"
 )
 
@@ -56,7 +55,7 @@ func Encode(msg *Message, namespace string) (string, error) {
 	}
 
 	if msg.Type == MessageTypeAckRequest || msg.Type == MessageTypeAckResponse {
-		result += strconv.Itoa(msg.AckId)
+		//result += strconv.Itoa(msg.AckId)
 	}
 
 	if msg.Type == MessageTypeOpen || msg.Type == MessageTypeClose {
@@ -127,23 +126,65 @@ func getMessageType(data string) (int, error) {
 /**
 Get ack id of current packet, if present
 */
-func getAck(text string) (ackId int, restText string, err error) {
+func getAck(text string) (ackId string, restText string, err error) {
+	/*
+		if len(text) < 4 {
+			return 0, "", ErrorWrongPacket
+		}
+		text = text[2:]
+
+		pos := strings.IndexByte(text, '[')
+		if pos == -1 {
+			return 0, "", ErrorWrongPacket
+		}
+
+		ack, err := strconv.Atoi(text[0:pos])
+		if err != nil {
+			return 0, "", err
+		}
+
+		return ack, text[pos:], nil
+	*/
 	if len(text) < 4 {
-		return 0, "", ErrorWrongPacket
+		return "", "", ErrorWrongPacket
 	}
 	text = text[2:]
-
 	pos := strings.IndexByte(text, '[')
 	if pos == -1 {
-		return 0, "", ErrorWrongPacket
+		return "", "", ErrorWrongPacket
 	}
-
-	ack, err := strconv.Atoi(text[0:pos])
+	restText = text[pos:]
+	_, args, err := getMethod(restText)
 	if err != nil {
-		return 0, "", err
+		return "", restText, err
 	}
 
-	return ack, text[pos:], nil
+	var ackResponse map[string]interface{}
+	err = json.Unmarshal([]byte(args), &ackResponse)
+
+	if err != nil {
+		return "", restText, err
+	}
+
+	var typeStr string
+	var messageIdStr string
+	if typeInc, ok := ackResponse["type"]; ok {
+		if typeInc != nil {
+			typeStr = typeInc.(string)
+		}
+	}
+
+	if messageId, ok := ackResponse["messageId"]; ok {
+		if messageId != nil {
+			messageIdStr = messageId.(string)
+		}
+	}
+
+	if typeStr != "" && messageIdStr != "" {
+		return typeStr + "_" + messageIdStr, restText, nil
+	}
+
+	return "", restText, nil
 }
 
 /**
@@ -202,18 +243,24 @@ func Decode(data string) (*Message, error) {
 	}
 
 	ack, rest, err := getAck(data)
-	msg.AckId = ack
-	if msg.Type == MessageTypeAckResponse {
-		if err != nil {
-			return nil, err
+
+	/*
+		if msg.Type == MessageTypeAckResponse {
+			if err != nil {
+				return nil, err
+			}
+			msg.Args = rest[1 : len(rest)-1]
+			return msg, nil
 		}
-		msg.Args = rest[1 : len(rest)-1]
-		return msg, nil
-	}
+	*/
 
 	if err != nil {
 		msg.Type = MessageTypeEmit
 		rest = data[2:]
+	}
+
+	if ack != "" {
+		msg.AckId = ack
 	}
 
 	msg.Method, msg.Args, err = getMethod(rest)

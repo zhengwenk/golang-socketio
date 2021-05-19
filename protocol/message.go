@@ -37,9 +37,8 @@ const (
 
 type Message struct {
 	Type   int
-	AckId  int
+	AckId  string
 	Method string
 	Args   string
 	Source string
 }
-

@@ -77,26 +77,25 @@ func (c *Channel) Emit(method string, args interface{}) error {
 /**
 Create ack packet based on given data and send it and receive response
 */
-func (c *Channel) Ack(method string, args interface{}, timeout time.Duration) (string, error) {
+func (c *Channel) Ack(method string, id string, args interface{}, timeout time.Duration) (string, error) {
 	msg := &protocol.Message{
 		Type:   protocol.MessageTypeAckRequest,
-		AckId:  c.ack.getNextId(),
 		Method: method,
 	}
 
 	waiter := make(chan string)
-	c.ack.addWaiter(msg.AckId, waiter)
+	c.ack.addWaiter(id, waiter)
 
 	err := send(msg, c, args)
 	if err != nil {
-		c.ack.removeWaiter(msg.AckId)
+		c.ack.removeWaiter(id)
 	}
 
 	select {
 	case result := <-waiter:
 		return result, nil
 	case <-time.After(timeout):
-		c.ack.removeWaiter(msg.AckId)
+		c.ack.removeWaiter(id)
 		return "", ErrorSendTimeout
 	}
 }

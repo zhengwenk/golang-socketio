@@ -16,7 +16,7 @@ type ackProcessor struct {
 	counter     int
 	counterLock sync.Mutex
 
-	resultWaiters     map[int](chan string)
+	resultWaiters     map[string](chan string)
 	resultWaitersLock sync.RWMutex
 }
 
@@ -35,7 +35,7 @@ func (a *ackProcessor) getNextId() int {
 Just before the ack function called, the waiter should be added
 to wait and receive response to ack call
 */
-func (a *ackProcessor) addWaiter(id int, w chan string) {
+func (a *ackProcessor) addWaiter(id string, w chan string) {
 	a.resultWaitersLock.Lock()
 	a.resultWaiters[id] = w
 	a.resultWaitersLock.Unlock()
@@ -44,7 +44,7 @@ func (a *ackProcessor) addWaiter(id int, w chan string) {
 /**
 removes waiter that is unnecessary anymore
 */
-func (a *ackProcessor) removeWaiter(id int) {
+func (a *ackProcessor) removeWaiter(id string) {
 	a.resultWaitersLock.Lock()
 	delete(a.resultWaiters, id)
 	a.resultWaitersLock.Unlock()
@@ -53,7 +53,7 @@ func (a *ackProcessor) removeWaiter(id int) {
 /**
 check if waiter with given ack id is exists, and returns it
 */
-func (a *ackProcessor) getWaiter(id int) (chan string, error) {
+func (a *ackProcessor) getWaiter(id string) (chan string, error) {
 	a.resultWaitersLock.RLock()
 	defer a.resultWaitersLock.RUnlock()
 
