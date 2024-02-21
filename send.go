@@ -81,6 +81,7 @@ func (c *Channel) Ack(method string, id string, args interface{}, timeout time.D
 	msg := &protocol.Message{
 		Type:   protocol.MessageTypeAckRequest,
 		Method: method,
+		AckId: id,
 	}
 
 	waiter := make(chan string)
