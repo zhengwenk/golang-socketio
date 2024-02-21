@@ -4,8 +4,8 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/zhenwenk/golang-socketio/protocol"
-	"github.com/zhenwenk/golang-socketio/transport"
+	"github.com/zhengwenk/golang-socketio/protocol"
+	"github.com/zhengwenk/golang-socketio/transport"
 )
 
 const (
